@@ -27,8 +27,8 @@ findFirstCycle url list = do
     text <- fetchPage (url)
     let first = head $ getLinkReferences text
     if first `elem` list
-        then return $ ( first : takeWhile (/=first) list
-                      , dropWhile (/=first) list
+        then return $ ( reverse $ first : takeWhile (/=first) list
+                      , reverse $ dropWhile (/=first) list
                       )
         else findFirstCycle first (first : list)
 
