@@ -13,7 +13,7 @@ Simply run the executable as follows from the command line:
 ```
 ./wiki_depth <wikipedia-page-name>
 ```
-\<wikipedia-page-name> is the part of the url for a wikipedia page that comes after `/wiki/`. 
+\<wikipedia-page-name> is the part of the url for a wikipedia page that comes after `/wiki/`.
 For example for the url `https://en.wikipedia.org/wiki/Philosophy` call the command as
 `./wiki_depth Philosophy`.
 
