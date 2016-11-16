@@ -9,8 +9,9 @@ make
 ```
 
 ## Bugs
-This will follow links that are in parenthesis. This is not the intended
-behavior for this executable.
+- This will follow links that are in parenthesis. This is not the intended
+  behavior for this executable.
+- This is pretty slow, it probably should be possible to make this faster
 
 ## Dependencies
 - tagsoup
