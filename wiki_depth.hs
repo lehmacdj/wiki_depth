@@ -41,7 +41,7 @@ unQuote l = take (length l - 2) $ drop 1 l
 
 getLinkReferences :: L.ByteString -> [String]
 getLinkReferences text =
-    filter (not . ("Help:" `isPrefixOf`)) $
+    filter (not . (':' `elem`)) $
     map (drop 6) $
     filter ("/wiki/" `isPrefixOf`) $
     map (unQuote . show . (\(TagOpen _ ((_,href):_)) -> href) . head) $

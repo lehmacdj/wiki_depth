@@ -1,6 +1,6 @@
 all: wiki_depth
 
-wiki_depth:
+wiki_depth: wiki_depth.hs
 	ghc --make wiki_depth
 
 .PHONY: clean
