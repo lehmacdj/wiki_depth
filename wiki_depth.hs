@@ -10,27 +10,34 @@ main = do
     args <- getArgs
     if length args == 1
         then do
-            (cycle, path) <- findFirstCycle (args !! 0) [args !! 0]
-            putStrLn $ (args !! 0)
+            let first = args !! 0
+            (cycle, path) <- findCycle first [first]
+            let path_length  = show $ length path
+            putStrLn $ first
                 ++ " has a path of length "
-                ++ (show $ length path) ++ ":"
-            print path
-            putStrLn $ "with a cycle of length "
-                ++ (show $ length cycle) ++ ":"
-            print cycle
+                ++ path_length
+                ++ ":"
+            printListIndented path
+            let cycle_length = show $ length cycle
+            putStrLn $ "with a cycle of length " ++ cycle_length ++ ":"
+            printListIndented cycle
         else
             putStrLn "Usage: ./wiki_depth <wikipedia-page>"
 
+printListIndented :: [String] -> IO ()
+printListIndented list =
+    putStrLn $ "    " ++ foldl1 (\acc s -> acc ++ "\n    " ++ s) list
+
 -- Returns the cycle and the path to the cycle
-findFirstCycle :: String -> [String] -> IO ([String], [String])
-findFirstCycle url list = do
+findCycle :: String -> [String] -> IO ([String], [String])
+findCycle url list = do
     text <- fetchPage (url)
     let first = head $ getLinkReferences text
     if first `elem` list
         then return $ ( reverse $ first : takeWhile (/=first) list
                       , reverse $ dropWhile (/=first) list
                       )
-        else findFirstCycle first (first : list)
+        else findCycle first (first : list)
 
 
 fetchPage :: String -> IO L.ByteString
