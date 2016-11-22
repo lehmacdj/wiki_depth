@@ -55,4 +55,8 @@ getLinkReferences text =
     partitions (~== "<a>") $
     takeWhile (~/= "<div class=mw-headline") $
     dropWhile (~/= "<p>") $
+    -- pop tags off list and put in stack
+    -- remove from stack when closing stack is found
+    -- when <p> is the only tag in the stack: done
+    dropWhile (~/= "<div id=mw-content-text") $
     parseTags text
