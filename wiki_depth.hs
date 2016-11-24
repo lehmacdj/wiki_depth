@@ -2,6 +2,7 @@ import Control.Monad
 import Network.HTTP.Conduit
 import System.Environment
 import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Char8 as C
 import qualified Data.Text as T
 import Text.HTML.TagSoup
 import Data.List
@@ -32,7 +33,7 @@ printListIndented list =
 findCycle :: String -> [String] -> IO ([String], [String])
 findCycle url list = do
     text <- fetchPage (url)
-    let first = head $ getLinkReferences text
+    let first = head $ getLinkReferences $ getBody text
     if first `elem` list
         then return $ ( reverse $ first : takeWhile (/=first) list
                       , reverse $ dropWhile (/=first) list
@@ -43,20 +44,29 @@ findCycle url list = do
 fetchPage :: String -> IO L.ByteString
 fetchPage article = simpleHttp ("https://en.wikipedia.org/wiki/" ++ article)
 
-unQuote :: String -> String
-unQuote l = take (length l - 2) $ drop 1 l
-
-getLinkReferences :: L.ByteString -> [String]
-getLinkReferences text =
+-- getLinkReferences :: L.ByteString -> [String]
+getLinkReferences tags =
     filter (not . (':' `elem`)) $
     map (drop 6) $
     filter ("/wiki/" `isPrefixOf`) $
     map (unQuote . show . (\(TagOpen _ ((_,href):_)) -> href) . head) $
-    partitions (~== "<a>") $
+    partitions (~== "<a>") $ tags
+
+getBody text =
+    findBottomLevelPTag [] $
     takeWhile (~/= "<div class=mw-headline") $
-    dropWhile (~/= "<p>") $
-    -- pop tags off list and put in stack
-    -- remove from stack when closing stack is found
-    -- when <p> is the only tag in the stack: done
+    drop 1 $
     dropWhile (~/= "<div id=mw-content-text") $
     parseTags text
+
+unQuote :: String -> String
+unQuote l = take (length l - 2) $ drop 1 l
+
+findBottomLevelPTag :: [L.ByteString] -> [Tag L.ByteString] -> [Tag L.ByteString]
+findBottomLevelPTag [] ((TagOpen n _):ts)
+    | n == C.pack "p" = ts
+    | otherwise = findBottomLevelPTag [n] ts
+findBottomLevelPTag s@(x:xs) (t:ts)
+    | TagOpen x [] ~== t = findBottomLevelPTag (x:s) ts
+    | TagClose x ~== t = findBottomLevelPTag xs ts
+    | otherwise = findBottomLevelPTag s ts
