@@ -53,6 +53,7 @@ getLinkReferences tags =
     partitions (~== "<a>") $ tags
 
 getBody text =
+    removeCoordinateReferences $
     findBottomLevelPTag [] $
     takeWhile (~/= "<div class=mw-headline") $
     drop 1 $
@@ -60,13 +61,21 @@ getBody text =
     parseTags text
 
 unQuote :: String -> String
-unQuote l = take (length l - 2) $ drop 1 l
+unQuote l = init $ tail l
 
 findBottomLevelPTag :: [L.ByteString] -> [Tag L.ByteString] -> [Tag L.ByteString]
-findBottomLevelPTag [] ((TagOpen n _):ts)
-    | n == C.pack "p" = ts
-    | otherwise = findBottomLevelPTag [n] ts
+findBottomLevelPTag _ [] = error "ran out of tags"
+findBottomLevelPTag [] (t:ts) =
+    case t of TagOpen n _
+                          | n == C.pack "p" -> ts
+                          | otherwise -> findBottomLevelPTag [n] ts
+              e -> findBottomLevelPTag [] ts
 findBottomLevelPTag s@(x:xs) (t:ts)
     | TagOpen x [] ~== t = findBottomLevelPTag (x:s) ts
     | TagClose x ~== t = findBottomLevelPTag xs ts
     | otherwise = findBottomLevelPTag s ts
+
+removeCoordinateReferences tags =
+    if tags !! 1 ~== "<span id=coordinates>"
+        then dropWhile (~/= "<p>") tags
+        else tags
