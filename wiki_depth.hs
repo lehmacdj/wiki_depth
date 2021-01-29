@@ -1,8 +1,11 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Main where
 
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as C
 import Data.List
+import GHC.Stack
 import Network.HTTP.Conduit hiding (path)
 import System.Environment
 import Text.HTML.TagSoup
@@ -49,21 +52,64 @@ fetchPage article = simpleHttp ("https://en.wikipedia.org/wiki/" ++ article)
 
 -- getLinkReferences :: L.ByteString -> [String]
 getLinkReferences :: (StringLike a, Show a) => [Tag a] -> [String]
-getLinkReferences tags =
-  filter (not . (':' `elem`)) $
-    map (drop 6) $
-      filter ("/wiki/" `isPrefixOf`) $
-        map (unQuote . show . (\(TagOpen _ ((_, href) : _)) -> href) . head) $
-          partitions (~== "<a>") tags
+getLinkReferences =
+  filter (not . (':' `elem`))
+    . map (drop 6)
+    . filter ("/wiki/" `isPrefixOf`)
+    . map (unQuote . show . (\(TagOpen _ ((_, href) : _)) -> href) . head)
+    . partitions (~== "<a>")
+
+-- | anything that matches the predicate is put as a separate element in the
+-- output list
+-- >>> breakOnAll (== '#') "foo#bar##baz" == ["foo", "#", "bar", "#", "#", bar"]
+breakOnAll :: (a -> Bool) -> [a] -> [[a]]
+breakOnAll p xs = case break p xs of
+  (everything, []) -> [everything] -- no break
+  (start, x : xs) -> [start] ++ [[x]] ++ breakOnAll p xs
+
+-- | As a precondition it is required that all parenthesis are properly nested.
+-- If this precondition is unmet behavior is undefined
+unsafeSkipParensNested :: HasCallStack => [Tag C.ByteString] -> [Tag C.ByteString]
+unsafeSkipParensNested = go 0 . (>>= splitParensOut)
+  where
+    splitParensOut = \case
+      TagText str ->
+        map (TagText . C.pack)
+          . breakOnAll ((||) <$> (== '(') <*> (== ')'))
+          . C.unpack
+          $ str
+      x -> [x]
+    (op, cp) = (TagText (C.pack "("), TagText (C.pack ")"))
+    anyParens = (||) <$> (== op) <*> (== cp)
+    ifUnnested :: HasCallStack => Int -> [Tag C.ByteString] -> [Tag C.ByteString]
+    ifUnnested nestingDepth s
+      | nestingDepth < 0 = error "negative nesting depth"
+      | nestingDepth == 0 = s
+      | otherwise = []
+    go nestingDepth chars = case break anyParens chars of
+      (everything, []) -> ifUnnested nestingDepth everything
+      (start, x : rest)
+        | x == op -> ifUnnested nestingDepth start ++ go (nestingDepth + 1) rest
+        | x == cp ->
+          if nestingDepth == 0
+            then -- ignore bad nesting that occurs when unmatched
+            -- close parens is found
+              start ++ go 0 rest
+            else -- we are in an impossible state or nestingDepth > 1
+            -- so no need to include start ever
+              go (nestingDepth - 1) rest
+      (start, end) -> error $ "impossible: " ++ show start ++ "," ++ show end
 
 getBody :: C.ByteString -> [Tag C.ByteString]
-getBody text =
-  removeCoordinateReferences $
-    findBottomLevelPTag [] $
-      takeWhile (~/= "<div class=mw-headline") $
-        drop 1 $
-          dropWhile (~/= "<div id=mw-content-text") $
-            parseTags text
+getBody =
+  -- TODO: this breaks on articles that have <p> tags in their info box
+  -- An example of this is Belief which should have attitude as its link
+  -- but instead gets Justification from the box saying that this article is
+  -- part of a series on Epistemology
+  unsafeSkipParensNested
+    . dropWhile (/= TagOpen (C.pack "p") [])
+    . dropWhile (~/= "<div id=mw-content-text")
+    . parseTags
 
 unQuote :: String -> String
 unQuote l = init $ tail l

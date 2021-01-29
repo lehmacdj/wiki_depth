@@ -24,9 +24,7 @@ For example for the url `https://en.wikipedia.org/wiki/Philosophy` call the comm
 `./wiki_depth Philosophy`.
 
 ## Bugs
-- This will follow links that are in parenthesis. This is not the intended
-  behavior for this executable.
-- This is pretty slow, it probably should be possible to make this faster
+- There are some bugs for certain pages. See details at comment in getBody
 - Only works on wikipedia, ideally I would pass a command line flag to make this work
   on any arbitrary wiki. Then it would be possible to find interesting conclusions about
   community wikis. This might be hard to implement though since ever wiki might not have the
