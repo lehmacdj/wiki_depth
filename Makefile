@@ -1,8 +1,14 @@
 all: wiki_depth
 
-wiki_depth: wiki_depth.hs
-	ghc -package http-conduit -package tagsoup --make wiki_depth
+PACKAGES = -package http-conduit -package tagsoup
 
-.PHONY: clean
+wiki_depth: wiki_depth.hs
+	ghc $(PACKAGES) --make wiki_depth
+
+ghci: wiki_depth.hs
+	ghci $(PACKAGES) wiki_depth.hs
+
 clean:
-	rm *.hi *.o wiki_depth
+	rm -rf *.hi *.o wiki_depth
+
+.PHONY: clean ghci
