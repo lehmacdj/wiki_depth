@@ -4,6 +4,12 @@ a wikipedia article converges to.  Takes the final bit of the url of a
 wikipedia article as an argument.
 
 ## Building
+You will need to install these Haskell packages as dependencies in order to be
+able to build successfully.
+- tagsoup
+- http-conduit
+
+Once you have installed the dependencies you can just use:
 ```
 make
 ```
@@ -25,7 +31,3 @@ For example for the url `https://en.wikipedia.org/wiki/Philosophy` call the comm
   on any arbitrary wiki. Then it would be possible to find interesting conclusions about
   community wikis. This might be hard to implement though since ever wiki might not have the
   same HTML.
-
-## Dependencies
-- tagsoup
-- http-conduit
