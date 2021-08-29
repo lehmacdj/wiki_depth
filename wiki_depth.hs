@@ -1,3 +1,11 @@
+#!/usr/bin/env stack
+{- stack script
+    --resolver lts-18.6
+    --package tagsoup
+    --package http-conduit
+    --package bytestring
+ -}
+
 {-# LANGUAGE LambdaCase #-}
 
 module Main where
@@ -38,7 +46,7 @@ printListIndented list =
 findCycle :: String -> [String] -> IO ([String], [String])
 findCycle url list = do
   text <- fetchPage url
-  let first = head $ getLinkReferences $ getBody text
+  let first = head $ drop 1 $ getLinkReferences $ getBody text
   if first `elem` list
     then
       pure
